@@ -1,0 +1,22 @@
+@keyframes shake {
+	0% {
+		left: 0;
+	}
+	25% {
+		left: 10px;
+	}
+	50% {
+		left: 0px;
+	}
+	75% {
+		left: -10px;
+	}
+	100% {
+		left: 0;
+	}
+}
+
+.shake {
+	position: relative;
+	animation: 100ms shake linear infinite;
+}

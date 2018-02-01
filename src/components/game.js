@@ -1,13 +1,23 @@
 import React, { Component } from 'react';
+import History from './history';
+import '../assets/css/game.css';
 
 class Game extends Component {
 	constructor(props) {
 		super(props);
 
 		this.state = {
-			randomNumber: null,
-			userNumber: ''
+			userNumber: '',
+			message: 'Make a guess',
+			shake: false,
+			guesses: 0,
+			lowScore: localStorage.getItem('score') || 'Not Set',
+			history: []
 		};
+
+		this.randomNumber = null;
+		this.status = 'playable';
+
 		this.resetGame = this.resetGame.bind(this);
 		this.makeGuess = this.makeGuess.bind(this);
 	}
@@ -17,21 +27,76 @@ class Game extends Component {
 	}
 
 	generateRandomNumber() {
-		const randNum = Math.floor(Math.random() * 10) + 1;
-
-		this.setState({
-			...this.state,
-			randomNumber: randNum
-		});
+		this.randomNumber = Math.floor(Math.random() * 10) + 1;
 	}
 
 	resetGame() {
+		this.status = 'playable';
+
 		this.generateRandomNumber();
+		this.setState({
+			userNumber: '',
+			message: 'Make a guess',
+			shake: false,
+			guesses: 0,
+			history: []
+		});
 	}
 
 	makeGuess(event) {
 		event.preventDefault();
-		console.log(this.state.userNumber);
+		if (this.status === 'won') {
+			return;
+		}
+
+		const { userNumber, guesses, history } = this.state;
+		let message = '';
+
+		if (this.randomNumber < userNumber) {
+			message = 'Too High';
+		} else if (this.randomNumber > userNumber) {
+			message = 'Too Low';
+		} else {
+			message = 'Correct!';
+			this.status = 'won';
+		}
+
+		this.setState(
+			{
+				message: message,
+				userNumber: '',
+				shake: true,
+				guesses: guesses + 1,
+				history: [`${userNumber} | ${message}`, ...history]
+			},
+			() => {
+				if (this.status === 'won') {
+					this.checkHighScore();
+				}
+			}
+		);
+
+		setTimeout(() => {
+			this.setState({
+				shake: false
+			});
+		}, 200);
+	}
+
+	checkHighScore() {
+		const lowScore = localStorage.getItem('score');
+		const { guesses } = this.state;
+
+		if (lowScore) {
+			if (guesses < lowScore) {
+				localStorage.setItem('score', guesses);
+			}
+		} else {
+			localStorage.setItem('score', guesses);
+		}
+		this.setState({
+			lowScore: localStorage.getItem('score')
+		});
 	}
 
 	render() {
@@ -39,11 +104,10 @@ class Game extends Component {
 			margin: '10px 5px'
 		};
 
-		const { randomNumber, userNumber } = this.state;
+		const { userNumber, message, shake, guesses, lowScore, history } = this.state;
 
 		return (
 			<div>
-				<p>Random Number: {randomNumber}</p>
 				<div className="row">
 					<form className="col s6 offset-s3" onSubmit={this.makeGuess}>
 						<div className="row">
@@ -74,6 +138,11 @@ class Game extends Component {
 						</div>
 					</form>
 				</div>
+				<p className="center-align">
+					Number of guesses: {guesses} | Personal best: {lowScore}
+				</p>
+				<h3 className={`center-align ${shake ? 'shake' : ''}`}>{message}</h3>
+				<History data={history} />
 			</div>
 		);
 	}
